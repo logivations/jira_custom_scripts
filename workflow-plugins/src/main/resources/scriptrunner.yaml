@@ -1,0 +1,15 @@
+# ScriptRunner JIRA plugin descriptor
+!descriptor
+
+    # jira listeners
+    scriptListeners:
+    - FIELD_LISTENER_NOTES: A sample listener
+      FIELD_MY_PARAM: my param
+      canned-script: com.onresolve.scriptrunner.canned.jira.workflow.SampleScriptListener
+      events:
+      - 1
+      - 4
+      - com.atlassian.crowd.event.user.UserCreatedEvent
+      projects:
+      - ''
+
