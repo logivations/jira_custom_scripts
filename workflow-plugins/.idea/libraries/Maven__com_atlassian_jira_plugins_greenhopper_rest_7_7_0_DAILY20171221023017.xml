@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.atlassian.jira.plugins:greenhopper-rest:7.7.0-DAILY20171221023017">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/atlassian/jira/plugins/greenhopper-rest/7.7.0-DAILY20171221023017/greenhopper-rest-7.7.0-DAILY20171221023017.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/atlassian/jira/plugins/greenhopper-rest/7.7.0-DAILY20171221023017/greenhopper-rest-7.7.0-DAILY20171221023017-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/atlassian/jira/plugins/greenhopper-rest/7.7.0-DAILY20171221023017/greenhopper-rest-7.7.0-DAILY20171221023017-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

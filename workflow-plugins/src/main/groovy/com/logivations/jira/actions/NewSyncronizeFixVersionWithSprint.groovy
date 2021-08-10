@@ -176,7 +176,7 @@ private void updateIssueFixVersions(MutableIssue issue, String jiraUser, Version
 }
 
 private boolean processIssue(SprintIssueService sprintIssueService, ApplicationUser loggedInUser, Version fixVersion,
-                             Sprint issueActiveFutureSprint, Issue issue, Collection<Sprin> activeFutureSprints) {
+                             Sprint issueActiveFutureSprint, Issue issue, Collection<Sprint> activeFutureSprints) {
     if (fixVersion == null) {
         log.info "issue doesn`t have fixVersion "
         if (issueActiveFutureSprint) {

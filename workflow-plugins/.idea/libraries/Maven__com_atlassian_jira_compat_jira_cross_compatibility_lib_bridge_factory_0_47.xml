@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.atlassian.jira.compat:jira-cross-compatibility-lib-bridge-factory:0.47">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/atlassian/jira/compat/jira-cross-compatibility-lib-bridge-factory/0.47/jira-cross-compatibility-lib-bridge-factory-0.47.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/atlassian/jira/compat/jira-cross-compatibility-lib-bridge-factory/0.47/jira-cross-compatibility-lib-bridge-factory-0.47-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/atlassian/jira/compat/jira-cross-compatibility-lib-bridge-factory/0.47/jira-cross-compatibility-lib-bridge-factory-0.47-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
