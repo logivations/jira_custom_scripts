@@ -1,4 +1,4 @@
-
+package com.logivations.jira.actions
 
 import com.atlassian.jira.bc.issue.IssueService
 import com.atlassian.jira.component.ComponentAccessor
