@@ -50,7 +50,7 @@ MutableIssue issue = issue
 // W2MO projects: WMO, AGVFM, LNO, OR, PLTF, WH
 
 //def projectIdToBoardId = [10000L:7L, 12702L:45l, 12703L:7L, 12704L:46L, 12705L:48L, 12700L:47L]
-def projectIdToBoardId = [12702L:45l, 12703L:50L, 12704L:46L, 12705L:48L, 12700L:47L]
+def projectIdToBoardId = [12702L:45L, 12703L:50L, 12704L:46L, 12705L:48L, 12700L:47L]
 
 
 def projectIds = projectIdToBoardId.keySet() as List
