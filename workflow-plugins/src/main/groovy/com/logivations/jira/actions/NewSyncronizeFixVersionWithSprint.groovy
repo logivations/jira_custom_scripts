@@ -128,7 +128,7 @@ private void handleSprintChangedEvent(String sprintNewValue, MutableIssue issue,
     def sprintName = sprint.getName()
     def  projectKey = issue.getProjectObject().getKey()
     def fixVersionName
-    if (sprintName.startsWith(projectKey)) {
+    if (sprintName.contains(projectKey)) {
         fixVersionName = (sprintName =~ /\d{1,2}\.\d{1,2}/)[0]
     } else {
         return
