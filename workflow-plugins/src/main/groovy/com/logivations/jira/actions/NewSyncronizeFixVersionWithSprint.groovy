@@ -50,7 +50,7 @@ MutableIssue issue = issue
 // W2MO projects: WMO, AGVFM, LNO, OR, PLTF, WH
 
 //def projectIdToBoardId = [10000L:7L, 12702L:45l, 12703L:7L, 12704L:46L, 12705L:48L, 12700L:47L]
-def projectIdToBoardId = [12702L:45L, 12703L:50L, 12704L:46L, 12705L:48L, 12700L:47L]
+def projectIdToBoardId = [12702L:45L, 12703L:47L, 12704L:46L, 12705L:48L, 12700L:47L]
 
 
 def projectIds = projectIdToBoardId.keySet() as List
@@ -129,7 +129,7 @@ private void handleSprintChangedEvent(String sprintNewValue, MutableIssue issue,
     def  projectKey = issue.getProjectObject().getKey()
     def fixVersionName
     if (sprintName.startsWith(projectKey)) {
-        fixVersionName = sprintName.substring(projectKey.length() + 1)
+        fixVersionName = (sprintName =~ /\d{1,2}\.\d{1,2}/)[0]
     } else {
         return
     }
@@ -188,6 +188,10 @@ private boolean processIssue(SprintIssueService sprintIssueService, ApplicationU
         def  projectKey = issue.getProjectObject().getKey()
         def sprintName = """${projectKey} ${fixVersion.name}"""
         def relatedSprint = activeFutureSprints.findByName(sprintName)
+        if(!relatedSprint && ['WH', 'LNO'].contains(projectKey)){
+            sprintName = """WH-LNO ${fixVersion.name}"""
+            relatedSprint = activeFutureSprints.findByName(sprintName)
+        }
         log.info "related Sprint: " + relatedSprint
         if (relatedSprint) {
             // fix version is the same as active/future sprint
