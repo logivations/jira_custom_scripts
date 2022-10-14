@@ -50,7 +50,7 @@ MutableIssue issue = issue
 // W2MO projects: WMO, AGVFM, LNO, OR, PLTF, WH
 
 //def projectIdToBoardId = [10000L:7L, 12702L:45l, 12703L:7L, 12704L:46L, 12705L:48L, 12700L:47L]
-def projectIdToBoardId = [12702L:45L, 12703L:47L, 12704L:46L, 12705L:48L, 12700L:47L]
+def projectIdToBoardId = [12702L: [45L], 12703L: [47L, 50L], 12704L: [46L], 12705L: [48L], 12700L: [47L]]
 
 
 def projectIds = projectIdToBoardId.keySet() as List
@@ -126,7 +126,7 @@ private void handleSprintChangedEvent(String sprintNewValue, MutableIssue issue,
     Sprint sprint = sprintManager.getSprint(Long.valueOf(sprintNewValue)).getValue()
     Collection<Version> unreleasedFixVersions = ComponentAccessor.versionManager.getVersionsUnreleased(projectId, false)
     def sprintName = sprint.getName()
-    def  projectKey = issue.getProjectObject().getKey()
+    def projectKey = issue.getProjectObject().getKey()
     def fixVersionName
     if (sprintName.contains(projectKey)) {
         fixVersionName = (sprintName =~ /\d{1,2}\.\d{1,2}/)[0]
@@ -146,16 +146,19 @@ private void handleSprintChangedEvent(String sprintNewValue, MutableIssue issue,
 }
 
 
-private void handleFixVersionChangedEvent(RapidViewService rapidViewService, Map<Long, Long> projectIdToBoardId, SprintManager sprintManager, Issue issue, SprintIssueService sprintIssueService, String jiraUser) {
+private void handleFixVersionChangedEvent(RapidViewService rapidViewService, Map<Long, List<Long>> projectIdToBoardId, SprintManager sprintManager, Issue issue, SprintIssueService sprintIssueService, String jiraUser) {
     def loggedInUser = ComponentAccessor.getUserManager().getUserByKey(jiraUser)
     def projectId = issue.getProjectId()
-    def rapidBoardId = projectIdToBoardId.get(projectId)
-    def view = rapidViewService.getRapidView(loggedInUser, rapidBoardId).getValue()
-    if (!view) {
-        log.warn("No view with this ID found")
-        return
+    def rapidBoardIds = projectIdToBoardId.get(projectId)
+    Collection<Sprint> boardSprints = new ArrayList<>();
+    for (rapidBoardId in rapidBoardIds) {
+        def view = rapidViewService.getRapidView(loggedInUser, rapidBoardId).getValue()
+        if (!view) {
+            log.warn("No view with this ID found")
+            return
+        }
+        boardSprints.addAll(sprintManager.getSprintsForView(view.getId(), of(ACTIVE, FUTURE)).getValue())
     }
-    def boardSprints = sprintManager.getSprintsForView(view.getId(), of(ACTIVE, FUTURE)).getValue()
     log.info "board Sprints: " + boardSprints
     def fixVersion = issue.getFixVersions().find()
     if (boardSprints) {
@@ -185,10 +188,10 @@ private boolean processIssue(SprintIssueService sprintIssueService, ApplicationU
         }
         return true
     } else {
-        def  projectKey = issue.getProjectObject().getKey()
+        def projectKey = issue.getProjectObject().getKey()
         def sprintName = """${projectKey} ${fixVersion.name}"""
         def relatedSprint = activeFutureSprints.findByName(sprintName)
-        if(!relatedSprint && ['WH', 'LNO'].contains(projectKey)){
+        if (!relatedSprint && ['WH', 'LNO'].contains(projectKey)) {
             sprintName = """WH-LNO ${fixVersion.name}"""
             relatedSprint = activeFutureSprints.findByName(sprintName)
         }
