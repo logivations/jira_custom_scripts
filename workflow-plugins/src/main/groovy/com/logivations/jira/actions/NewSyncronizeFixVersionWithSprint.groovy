@@ -47,10 +47,10 @@ SprintManager sprintManager
 
 MutableIssue issue = issue
 
-// W2MO projects: WMO, AGVFM, LNO, OR, PLTF, WH
+// W2MO projects: WMO, AMRFM, LNO, OR, PLTF, WH, FM
 
 //def projectIdToBoardId = [10000L:7L, 12702L:45l, 12703L:7L, 12704L:46L, 12705L:48L, 12700L:47L]
-def projectIdToBoardId = [12702L: [45L], 12703L: [47L, 50L], 12704L: [46L], 12705L: [48L], 12700L: [47L]]
+def projectIdToBoardId = [12702L: [45L], 12703L: [47L, 50L], 12704L: [46L], 12705L: [48L], 12700L: [47L], 13300L :[55L]]
 
 
 def projectIds = projectIdToBoardId.keySet() as List
