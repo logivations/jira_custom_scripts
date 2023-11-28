@@ -53,7 +53,7 @@ def projectIdToBoardId = [12703L: [47L, 50L], 12704L: [46L], 12705L: [48L], 1270
 def projectIds = projectIdToBoardId.keySet() as List
 
 // has to be Jira user with right 'Schedule Issues'
-String jiraUser = "bohdan.petrovskyy"
+String jiraUser = "administrator"
 
 //TODO: -------------------- remove test issue -----------------
 Issue testIssue = ComponentAccessor.issueManager.getIssueObject("PLTF-156")
