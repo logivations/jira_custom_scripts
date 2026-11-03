@@ -1,6 +1,7 @@
 package com.logivations.jira.actions
 
 import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.event.issue.IssueEvent
 import com.atlassian.jira.issue.ModifiedValue
 import com.atlassian.jira.issue.MutableIssue
 import com.atlassian.jira.issue.fields.CustomField
@@ -13,7 +14,12 @@ import static com.atlassian.jira.event.type.EventDispatchOption.DO_NOT_DISPATCH
 
 log.setLevel(Level.DEBUG)
 log.warn "Event executed"
-MutableIssue issue = issue
+// The issue of a transition event can still have the time spent from before the transition, so work logged on the
+// transition screen was left out (PLTF-3161). Read the stored issue instead.
+MutableIssue issue = ComponentAccessor.getIssueManager().getIssueObject((event as IssueEvent).getIssue().getId())
+if (issue == null) {
+    return
+}
 
 Double total = null;
 def spentTime = issue.getTimeSpent()
@@ -21,7 +27,7 @@ log.warn "spentTime =" + spentTime
 def originalEstimate = issue.getOriginalEstimate()
 log.warn "originalEstimate =" + originalEstimate
 if (spentTime != null) {
-    def totalTimeRemaining = originalEstimate - spentTime
+    def totalTimeRemaining = (originalEstimate ?: 0) - spentTime
     total = totalTimeRemaining > 0 ? totalTimeRemaining / 3600 : 0
 } else if (originalEstimate != null) {
     total = originalEstimate / 3600
@@ -34,7 +40,7 @@ if (total != null) {
     log.warn oldW2moRemainingEstimateValue
     log.warn w2moRemainingEstimateCustomField
 
-    def remainingEstimate = issue.getEstimate() / 3600
+    def remainingEstimate = (issue.getEstimate() ?: 0) / 3600
     if (total > remainingEstimate) {
         String jiraUser = "administrator"
         def loggedInUser = ComponentAccessor.getUserManager().getUserByKey(jiraUser)
