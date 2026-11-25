@@ -45,9 +45,12 @@ SprintManager sprintManager
 
 MutableIssue issue = issue
 
-// W2MO projects: AMRNAV, LNO, OR, PLTF, WH, FM
+// W2MO projects: WMO, LNO, OR, PLTF, WH, FM
+// RTDT id 14100
+// LVSPR 10400
 
-def projectIdToBoardId = [12703L: [47L, 50L], 12704L: [46L], 12705L: [48L], 12700L: [47L], 13300L :[55L]]
+//def projectIdToBoardId = [10000L:7L, 12702L:45l, 12703L:7L, 12704L:46L, 12705L:48L, 12700L:47L]
+def projectIdToBoardId = [12703L: [47L, 50L], 12704L: [46L], 12705L: [48L], 12700L: [47L], 13300L :[55L], 14100L : [66L], 10400 : [21L]]
 
 
 def projectIds = projectIdToBoardId.keySet() as List
@@ -55,14 +58,7 @@ def projectIds = projectIdToBoardId.keySet() as List
 // has to be Jira user with right 'Schedule Issues'
 String jiraUser = "administrator"
 
-//TODO: -------------------- remove test issue -----------------
-Issue testIssue = ComponentAccessor.issueManager.getIssueObject("PLTF-156")
-if (!issue.key.equals(testIssue.key)) {
-    log.info "Not a test issue"
-    return
-}
-
-log.info "Issue processing"
+log.info "Issue processing" + issue
 
 IssueEvent event = event
 def eventTypeId = event.getEventTypeId()
@@ -89,26 +85,24 @@ if (eventTypeId == ISSUE_UPDATED_ID) {
         }
         if (field.equalsIgnoreCase('Fix Version')) {
             log.info "Fix version changed"
+            log.info changeItem
             String oldFixVersionValue = changeItem.getString("oldvalue")
             String newFixVersionValue = changeItem.getString("newvalue")
             log.info "Old value = ${oldFixVersionValue}, New value = ${newFixVersionValue}"
             handleFixVersionChangedEvent(rapidViewService, projectIdToBoardId, sprintManager, issue, sprintIssueService, jiraUser)
         } else if (field.equalsIgnoreCase('Sprint')) {
             log.info "Sprint changed"
-            String sprintOldValue = changeItem.getString("oldvalue")
-            String sprintNewValue = changeItem.getString("newvalue")
-            if (!sprintNewValue) {
-                log.info "Moved to backlog!!!"
+            // the values hold every sprint of the issue, the closed ones too: "914, 923, 1211"
+            Set<String> oldSprintIds = sprintIds(changeItem.getString("oldvalue"))
+            Set<String> newSprintIds = sprintIds(changeItem.getString("newvalue"))
+            List<String> addedSprintIds = (newSprintIds - oldSprintIds) as List
+            log.info "Old sprints = ${oldSprintIds}, New sprints = ${newSprintIds}, Added = ${addedSprintIds}"
+            if (addedSprintIds) {
+                handleSprintChangedEvent(addedSprintIds.last(), issue, sprintManager, jiraUser, projectId)
+            } else if (!hasOpenSprint(newSprintIds, sprintManager)) {
+                log.info "Moved to backlog"
                 updateIssueFixVersions(issue, jiraUser, null)
-                return
             }
-            if (sprintNewValue.contains(",")) {
-                List<String> sprints = sprintNewValue.tokenize(',')
-                sprintNewValue = sprints.last().trim()
-            }
-            log.info "Old value = ${sprintOldValue}, New value = ${sprintNewValue}"
-            handleSprintChangedEvent(sprintNewValue, issue, sprintManager, jiraUser, projectId)
-
         }
 
     }
@@ -119,27 +113,53 @@ if (eventTypeId == ISSUE_UPDATED_ID) {
     return
 }
 
-private void handleSprintChangedEvent(String sprintNewValue, MutableIssue issue, SprintManager sprintManager, String jiraUser, Long projectId) {
-    Sprint sprint = sprintManager.getSprint(Long.valueOf(sprintNewValue)).getValue()
-    Collection<Version> unreleasedFixVersions = ComponentAccessor.versionManager.getVersionsUnreleased(projectId, false)
-    def sprintName = sprint.getName()
+private static Set<String> sprintIds(String changeValue) {
+    return changeValue ? changeValue.tokenize(',')*.trim().findAll { it } as LinkedHashSet<String> : new LinkedHashSet<String>()
+}
+
+private static boolean hasOpenSprint(Set<String> sprintIds, SprintManager sprintManager) {
+    return sprintIds.any { String id ->
+        Sprint sprint = sprintManager.getSprint(Long.valueOf(id)).getValue()
+        sprint && sprint.getState() in [ACTIVE, FUTURE]
+    }
+}
+
+/**
+ * Reverse of the sprint name built in processIssue: "<project key> <version>", or "WH-LNO <version>" for WH and LNO.
+ * Returns null for a sprint of another board.
+ */
+private static String fixVersionNameOfSprint(String sprintName, String projectKey) {
+    List<String> prefixes = ["${projectKey} ".toString()]
+    if (['WH', 'LNO'].contains(projectKey)) {
+        prefixes << 'WH-LNO '
+    }
+    String prefix = prefixes.find { sprintName.startsWith(it) }
+    return prefix ? sprintName.substring(prefix.length()).trim() : null
+}
+
+private void handleSprintChangedEvent(String sprintId, MutableIssue issue, SprintManager sprintManager, String jiraUser, Long projectId) {
+    Sprint sprint = sprintManager.getSprint(Long.valueOf(sprintId)).getValue()
+    if (!sprint) {
+        log.warn "No sprint with ID ${sprintId} found"
+        return
+    }
     def projectKey = issue.getProjectObject().getKey()
-    def fixVersionName
-    if (sprintName.contains(projectKey)) {
-        fixVersionName = (sprintName =~ /\d{1,2}\.\d{1,2}/)[0]
-    } else {
+    String fixVersionName = fixVersionNameOfSprint(sprint.getName(), projectKey)
+    if (!fixVersionName) {
+        log.info "Sprint '${sprint.getName()}' does not belong to project ${projectKey}"
         return
     }
+    Collection<Version> unreleasedFixVersions = ComponentAccessor.versionManager.getVersionsUnreleased(projectId, false)
     Version newFixVersion = unreleasedFixVersions.findByName(fixVersionName)
-    if (newFixVersion) {
-        if (issue.getFixVersions().findByName(newFixVersion.getName())) {
-            log.info "issue already has required Fix Version"
-            return
-        }
-        updateIssueFixVersions(issue, jiraUser, newFixVersion)
+    if (!newFixVersion) {
+        log.info "No unreleased Fix Version '${fixVersionName}' in project ${projectKey}"
         return
     }
-    return
+    if (issue.getFixVersions()*.getName() == [newFixVersion.getName()]) {
+        log.info "issue already has required Fix Version"
+        return
+    }
+    updateIssueFixVersions(issue, jiraUser, newFixVersion)
 }
 
 
@@ -156,13 +176,13 @@ private void handleFixVersionChangedEvent(RapidViewService rapidViewService, Map
         }
         boardSprints.addAll(sprintManager.getSprintsForView(view.getId(), of(ACTIVE, FUTURE)).getValue())
     }
-    log.info "board Sprints: " + boardSprints
-    def fixVersion = issue.getFixVersions().find()
-    if (boardSprints) {
-        Sprint issueActiveSprint = sprintIssueService.getActiveOrFutureSprintForIssue(loggedInUser, issue).getValue().getOrNull()
-        log.info " issue active sprint: " + issueActiveSprint
-        processIssue(sprintIssueService, loggedInUser, fixVersion, issueActiveSprint, issue, boardSprints)
-    }
+        log.info "board Sprints: " + boardSprints
+        def fixVersion = issue.getFixVersions().find()
+        if (boardSprints) {
+            Sprint issueActiveSprint = sprintIssueService.getActiveOrFutureSprintForIssue(loggedInUser, issue).getValue().getOrNull()
+            log.info " issue active sprint: " + issueActiveSprint
+            processIssue(sprintIssueService, loggedInUser, fixVersion, issueActiveSprint, issue, boardSprints)
+        }
 }
 
 private void updateIssueFixVersions(MutableIssue issue, String jiraUser, Version newFixVersion) {
@@ -185,10 +205,10 @@ private boolean processIssue(SprintIssueService sprintIssueService, ApplicationU
         }
         return true
     } else {
-        def projectKey = issue.getProjectObject().getKey()
+        def  projectKey = issue.getProjectObject().getKey()
         def sprintName = """${projectKey} ${fixVersion.name}"""
         def relatedSprint = activeFutureSprints.findByName(sprintName)
-        if (!relatedSprint && ['WH', 'LNO'].contains(projectKey)) {
+        if(!relatedSprint && ['WH', 'LNO'].contains(projectKey)){
             sprintName = """WH-LNO ${fixVersion.name}"""
             relatedSprint = activeFutureSprints.findByName(sprintName)
         }
